@@ -1,15 +1,39 @@
-import Link from "next/link";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
+import Container from "@mui/material/Container";
+import ImageList from "@mui/material/ImageList";
+import ImageListItem from "@mui/material/ImageListItem";
+import Paper from "@mui/material/Paper";
+import Stack from "@mui/material/Stack";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import Typography from "@mui/material/Typography";
+import Timeline from "@mui/lab/Timeline";
+import TimelineConnector from "@mui/lab/TimelineConnector";
+import TimelineContent from "@mui/lab/TimelineContent";
+import TimelineDot from "@mui/lab/TimelineDot";
+import TimelineItem from "@mui/lab/TimelineItem";
+import TimelineSeparator from "@mui/lab/TimelineSeparator";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  REPAIR_TASK_TEMPLATE_ROWS,
+  type RepairTaskTemplateRow,
+} from "@/components/admin/repair-task-template";
+import {
+  InfoTile,
+  PageHero,
+  PublicHeader,
+  PublicMain,
+} from "@/components/public/hemlock-public";
 import { getPublicRepairRecord } from "@/lib/public-data";
+import { publicProductTypeLabel } from "@/lib/public-labels";
 
 type PublicRepairPageProps = {
   params: Promise<{ repairId: string; serial: string }>;
@@ -43,84 +67,226 @@ async function PublicRepairContent({ params }: PublicRepairPageProps) {
   }
 
   return (
-    <main className="mx-auto flex min-h-svh w-full max-w-5xl flex-col gap-6 px-6 py-10">
-      <div className="flex flex-col gap-2">
-        <Link
-          className="text-sm text-muted-foreground"
-          href={`/t/${encodeURIComponent(product.serial_number)}`}
-        >
-          Repair History
-        </Link>
-        <h1 className="text-3xl font-semibold">
-          Repair #{repair.repair_number}
-        </h1>
-        <p className="font-mono text-sm text-muted-foreground">
-          {product.serial_number}
-        </p>
-      </div>
+    <PublicMain>
+      <PublicHeader />
+      <Container maxWidth="lg" sx={{ py: { xs: 5, md: 7 } }}>
+        <Stack spacing={5}>
+          <PageHero
+            eyebrow="Repair tracking card"
+            meta={
+              <>
+                <Box component="span" sx={{ fontFamily: "monospace" }}>
+                  {product.serial_number}
+                </Box>
+                {" · "}
+                Repair #{repair.repair_number}
+              </>
+            }
+            title="Completed repair details"
+          />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Repair Summary</CardTitle>
-          <CardDescription>{repair.repair_date}</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-3 text-sm">
-          <p>{repair.summary_en || "Repair details available."}</p>
-          {repair.public_notes_en ? <p>{repair.public_notes_en}</p> : null}
-        </CardContent>
-      </Card>
+          <Paper square variant="outlined" sx={{ p: { xs: 3, md: 4 } }}>
+            <Stack
+              direction={{ xs: "column", md: "row" }}
+              spacing={3}
+              sx={{ justifyContent: "space-between", mb: 4 }}
+            >
+              <Box>
+                <Typography component="h2" sx={{ fontSize: 24, fontWeight: 800 }}>
+                  Repair #{repair.repair_number}
+                </Typography>
+                <Typography color="text.secondary" sx={{ mt: 1 }}>
+                  Public tracking card for this completed service record.
+                </Typography>
+              </Box>
+              <Chip color="primary" label="Completed" sx={{ alignSelf: "flex-start" }} />
+            </Stack>
+            <Box
+              sx={{
+                display: "grid",
+                gap: 3,
+                gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" },
+              }}
+            >
+              <InfoTile label="Received Date" value={repair.received_date} />
+              <InfoTile label="Qualified Date" value={repair.repair_date} />
+              <InfoTile label="Factory" value={repair.factory} />
+              <InfoTile
+                label="Product Type"
+                value={publicProductTypeLabel(product.product_type)}
+              />
+              <InfoTile label="Serial Number" value={product.serial_number} />
+            </Box>
+          </Paper>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Repair Items</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4">
-          {tasks.map((task, index) => (
-            <div className="grid gap-3 rounded-md border p-4" key={task.id}>
-              <div className="font-medium">
-                {task.process_name_en || `Repair Item ${index + 1}`}
-              </div>
-              <div className="grid gap-3 md:grid-cols-2">
-                <Info label="Description" value={task.description_en} />
-                <Info label="Corrective Action" value={task.action_en} />
-                <Info label="Quantity" value={task.quantity} />
-                <Info label="Equipment" value={task.equipment_en} />
-                <Info
-                  label="Person Responsible"
-                  value={task.responsible_person_en || "Service Team"}
-                />
-                <Info label="Result" value={task.result} />
-              </div>
-            </div>
-          ))}
+          <Paper square variant="outlined" sx={{ p: { xs: 3, md: 4 } }}>
+            <Typography component="h2" sx={{ fontSize: 24, fontWeight: 800, mb: 3 }}>
+              Service Progress
+            </Typography>
+            <Timeline
+              position="right"
+              sx={{ m: 0, p: 0, "& .MuiTimelineItem-root:before": { display: "none" } }}
+            >
+              {[
+                ["Received", repair.received_date || "Not provided"],
+                ["Inspection", "Product condition reviewed"],
+                ["Repair", "Corrective actions completed"],
+                ["Qualified", repair.repair_date || "Not provided"],
+              ].map(([label, value], index, items) => (
+                <TimelineItem key={label}>
+                  <TimelineSeparator>
+                    <TimelineDot color="primary" />
+                    {index < items.length - 1 ? <TimelineConnector /> : null}
+                  </TimelineSeparator>
+                  <TimelineContent sx={{ pb: 2.5 }}>
+                    <Typography sx={{ fontWeight: 800 }}>{label}</Typography>
+                    <Typography color="text.secondary">{value}</Typography>
+                  </TimelineContent>
+                </TimelineItem>
+              ))}
+            </Timeline>
+          </Paper>
 
-          {tasks.length === 0 ? (
-            <div className="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
-              No repair item details are available.
-            </div>
-          ) : null}
-        </CardContent>
-      </Card>
+          <Paper square variant="outlined" sx={{ p: { xs: 2, md: 4 } }}>
+            <Typography component="h2" sx={{ fontSize: 24, fontWeight: 800, mb: 3, px: { xs: 1, md: 0 } }}>
+              Repair Items
+            </Typography>
+            <RepairCardTable tasks={tasks} />
+          </Paper>
 
-      <ImageSection images={beforeImages} imageUrl={imageUrl} title="Before Repair" />
-      <ImageSection images={afterImages} imageUrl={imageUrl} title="After Repair" />
-    </main>
+          <Box sx={{ display: "grid", gap: 3, gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" } }}>
+            <ImageSection images={beforeImages} imageUrl={imageUrl} title="Before Repair" />
+            <ImageSection images={afterImages} imageUrl={imageUrl} title="After Repair" />
+          </Box>
+
+          <Button
+            href={`/t/${encodeURIComponent(product.serial_number)}`}
+            sx={{ alignSelf: "flex-start" }}
+            variant="outlined"
+          >
+            Back to repair history
+          </Button>
+        </Stack>
+      </Container>
+    </PublicMain>
   );
 }
 
-function Info({
-  label,
-  value,
+function RepairCardTable({
+  tasks,
 }: {
-  label: string;
-  value: string | null | undefined;
+  tasks: Array<{
+    action_en: string | null;
+    description_en: string | null;
+    id: string;
+    process_name_zh: string | null;
+    quantity: string | null;
+  }>;
 }) {
-  return (
-    <div className="grid gap-1">
-      <div className="text-sm text-muted-foreground">{label}</div>
-      <div className="text-sm">{value || "Not provided"}</div>
-    </div>
+  const byProcess = new Map(tasks.map((task) => [task.process_name_zh, task]));
+  const rows = REPAIR_TASK_TEMPLATE_ROWS.filter(
+    (row) => !row.selectable || byProcess.has(row.processZh),
   );
+
+  if (rows.length === 0) {
+    return (
+      <Box
+        sx={{
+          border: "1px dashed",
+          borderColor: "divider",
+          color: "text.secondary",
+          p: 5,
+          textAlign: "center",
+        }}
+      >
+        No repair item details are available.
+      </Box>
+    );
+  }
+
+  return (
+    <TableContainer component={Paper} square variant="outlined">
+      <Table>
+        <TableHead>
+          <TableRow sx={{ bgcolor: "primary.main" }}>
+            <TableCell sx={{ color: "primary.contrastText", fontWeight: 800 }}>
+              Section
+            </TableCell>
+            <TableCell sx={{ color: "primary.contrastText", fontWeight: 800 }}>
+              Process
+            </TableCell>
+            <TableCell sx={{ color: "primary.contrastText", fontWeight: 800 }}>
+              Condition
+            </TableCell>
+            <TableCell sx={{ color: "primary.contrastText", fontWeight: 800 }}>
+              Repair Method
+            </TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {groupRows(rows).flatMap(([section, sectionRows]) =>
+            sectionRows.map((row, index) => {
+              const task = byProcess.get(row.processZh);
+              return (
+                <TableRow key={row.key}>
+                  {index === 0 ? (
+                    <TableCell
+                      rowSpan={sectionRows.length}
+                      sx={{ bgcolor: "#f7f7f7", fontWeight: 800, width: 180 }}
+                    >
+                      {sectionLabel(section)}
+                    </TableCell>
+                  ) : null}
+                  <TableCell sx={{ fontWeight: 800 }}>{row.processEn}</TableCell>
+                  <TableCell>
+                    {task?.description_en || row.descriptionEn || "Not provided"}
+                  </TableCell>
+                  <TableCell>
+                    <Stack spacing={0.5}>
+                      <Typography>{task?.action_en || row.actionEn || "Not provided"}</Typography>
+                      {task?.quantity ? (
+                        <Typography color="text.secondary" sx={{ fontSize: 13 }}>
+                          Quantity: {task.quantity}
+                        </Typography>
+                      ) : null}
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              );
+            }),
+          )}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+}
+
+function groupRows(rows: RepairTaskTemplateRow[]) {
+  const groups: Array<[string, RepairTaskTemplateRow[]]> = [];
+
+  for (const row of rows) {
+    const group = groups.at(-1);
+    if (group?.[0] === row.section) {
+      group[1].push(row);
+    } else {
+      groups.push([row.section, [row]]);
+    }
+  }
+
+  return groups;
+}
+
+function sectionLabel(section: string) {
+  const labels: Record<string, string> = {
+    产品清洗: "Cleaning",
+    检验标记问题: "Inspection",
+    维修制程: "Repair Process",
+    复检: "Re-inspection",
+    产品抛光清洗: "Polishing and Cleaning",
+    "终检、包装": "Final Inspection",
+  };
+
+  return labels[section] ?? section;
 }
 
 function ImageSection({
@@ -130,46 +296,51 @@ function ImageSection({
 }: {
   imageUrl: (storagePath: string) => string;
   images: Array<{
-    caption_en: string | null;
-    caption_zh: string | null;
     id: string;
     storage_path: string;
   }>;
   title: string;
 }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="grid gap-3 md:grid-cols-3">
-        {images.map((image) => (
-          <a
-            className="grid gap-2 rounded-md border p-3 transition-colors hover:bg-muted/40"
-            href={imageUrl(image.storage_path)}
-            key={image.id}
-            rel="noreferrer"
-            target="_blank"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              alt={image.caption_en || image.caption_zh || title}
-              className="aspect-square w-full rounded-md object-cover"
-              src={imageUrl(image.storage_path)}
-            />
-            <div className="text-sm text-muted-foreground">
-              {image.caption_en || image.caption_zh || "No caption"}
-            </div>
-          </a>
-        ))}
-
-        {images.length === 0 ? (
-          <div className="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground md:col-span-3">
-            No images available.
-          </div>
-        ) : null}
-      </CardContent>
-    </Card>
+    <Paper square variant="outlined" sx={{ p: { xs: 2, md: 3 } }}>
+      <Typography component="h2" sx={{ fontSize: 22, fontWeight: 800, mb: 2 }}>
+        {title}
+      </Typography>
+      {images.length > 0 ? (
+        <ImageList cols={2} gap={12}>
+          {images.map((image) => (
+            <ImageListItem
+              component="a"
+              href={imageUrl(image.storage_path)}
+              key={image.id}
+              rel="noreferrer"
+              sx={{ border: "1px solid", borderColor: "divider" }}
+              target="_blank"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                alt={title}
+                loading="lazy"
+                src={imageUrl(image.storage_path)}
+                style={{ aspectRatio: "1 / 1", objectFit: "cover", width: "100%" }}
+              />
+            </ImageListItem>
+          ))}
+        </ImageList>
+      ) : (
+        <Box
+          sx={{
+            border: "1px dashed",
+            borderColor: "divider",
+            color: "text.secondary",
+            p: 5,
+            textAlign: "center",
+          }}
+        >
+          No images available.
+        </Box>
+      )}
+    </Paper>
   );
 }
 

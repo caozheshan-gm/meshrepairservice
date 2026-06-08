@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { updateRepairRecord } from "@/app/admin/products/[id]/repairs/actions";
 import { RepairForm } from "@/app/admin/products/[id]/repairs/new/page";
+import { AdminPageShell } from "@/components/admin/admin-shell";
 import { RepairImageUploader } from "@/components/admin/repair-image-uploader";
 import {
   Card,
@@ -24,7 +24,7 @@ async function EditRepairContent({ params }: EditRepairPageProps) {
 
   const { data: product, error: productError } = await supabase
     .from("products")
-    .select("id,serial_number")
+    .select("id,serial_number,product_type")
     .eq("id", id)
     .single();
 
@@ -61,26 +61,16 @@ async function EditRepairContent({ params }: EditRepairPageProps) {
     }));
 
   return (
-    <div className="mx-auto flex min-h-svh w-full max-w-5xl flex-col gap-6 px-6 py-10">
-      <div className="flex flex-col gap-2">
-        <Link
-          className="text-sm text-muted-foreground"
-          href={`/admin/products/${product.id}`}
-        >
-          产品详情
-        </Link>
-        <h1 className="text-3xl font-semibold">
-          编辑第 {repair.repair_number} 次维修
-        </h1>
-        <p className="font-mono text-sm text-muted-foreground">
-          {product.serial_number}
-        </p>
-      </div>
-
+    <AdminPageShell
+      subtitle={product.serial_number}
+      title={`编辑第 ${repair.repair_number} 次维修`}
+    >
       <RepairForm
         action={updateRepairRecord}
         cancelHref={`/admin/products/${product.id}`}
         productId={product.id}
+        productSerialNumber={product.serial_number}
+        productType={product.product_type}
         repair={repair}
         repairId={repair.id}
         tasks={tasks}
@@ -89,7 +79,10 @@ async function EditRepairContent({ params }: EditRepairPageProps) {
       <Card>
         <CardHeader>
           <CardTitle>维修图片</CardTitle>
-          <CardDescription>上传维修前、维修后或其他补充图片。</CardDescription>
+          <CardDescription>
+            上传维修前、维修后或其他补充图片。删除图片会同时删除 Storage 文件和
+            repair_images 元数据。
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <RepairImageUploader
@@ -100,7 +93,7 @@ async function EditRepairContent({ params }: EditRepairPageProps) {
           />
         </CardContent>
       </Card>
-    </div>
+    </AdminPageShell>
   );
 }
 

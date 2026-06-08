@@ -1,16 +1,31 @@
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
+import Container from "@mui/material/Container";
+import Paper from "@mui/material/Paper";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
+import Timeline from "@mui/lab/Timeline";
+import TimelineConnector from "@mui/lab/TimelineConnector";
+import TimelineContent from "@mui/lab/TimelineContent";
+import TimelineDot from "@mui/lab/TimelineDot";
+import TimelineItem from "@mui/lab/TimelineItem";
+import TimelineSeparator from "@mui/lab/TimelineSeparator";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
-import { Badge } from "@/components/ui/badge";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  InfoTile,
+  PageHero,
+  PublicHeader,
+  PublicMain,
+} from "@/components/public/hemlock-public";
 import { getPublicProductBySerial } from "@/lib/public-data";
+import {
+  publicMaterialLabel,
+  publicProductTypeLabel,
+} from "@/lib/public-labels";
 
 type TracePageProps = {
   params: Promise<{ serial: string }>;
@@ -29,101 +44,163 @@ async function TraceContent({ params }: TracePageProps) {
     .sort((a, b) => b.repair_number - a.repair_number);
 
   return (
-    <main className="mx-auto flex min-h-svh w-full max-w-5xl flex-col gap-6 px-6 py-10">
-      <div className="flex flex-col gap-2">
-        <p className="text-sm text-muted-foreground">Mesh Repair Service</p>
-        <h1 className="text-3xl font-semibold">Repair History</h1>
-        <p className="font-mono text-sm text-muted-foreground">
-          {product.serial_number}
-        </p>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Product Traceability</CardTitle>
-          <CardDescription>
-            This page shows public repair records linked to the product
-            nameplate.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
-          <Info label="Serial Number" value={product.serial_number} />
-          <Info
-            label="Product Source"
-            value={
-              product.product_source === "own"
-                ? "Manufactured Product"
-                : "Customer Supplied Product"
+    <PublicMain>
+      <PublicHeader />
+      <Container maxWidth="lg" sx={{ py: { xs: 5, md: 7 } }}>
+        <Stack spacing={5}>
+          <PageHero
+            eyebrow="Repair history"
+            meta={
+              <Box component="span" sx={{ fontFamily: "monospace" }}>
+                {product.serial_number}
+              </Box>
             }
+            title="Product service records"
           />
-          <Info label="Product Type" value={product.product_type} />
-          {product.product_source === "own" ? (
-            <>
-              <Info label="Production Date" value={product.production_date} />
-              <Info label="Model" value={product.production_model} />
-              <Info label="Material" value={product.material} />
-              <Info label="Size" value={product.size} />
-            </>
-          ) : null}
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <CardTitle>Repair Records</CardTitle>
-              <CardDescription>
-                {repairs.length} completed repair record
-                {repairs.length === 1 ? "" : "s"}.
-              </CardDescription>
-            </div>
-            <Badge variant="secondary">{repairs.length} repairs</Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="grid gap-3">
-          {repairs.map((repair) => (
-            <Link
-              href={`/t/${encodeURIComponent(product.serial_number)}/repairs/${repair.id}`}
-              key={repair.id}
+          <Paper square variant="outlined" sx={{ p: { xs: 3, md: 4 } }}>
+            <Stack
+              direction={{ xs: "column", md: "row" }}
+              spacing={3}
+              sx={{ justifyContent: "space-between", mb: 4 }}
             >
-              <div className="grid gap-2 rounded-md border p-4 transition-colors hover:bg-muted/40 md:grid-cols-[120px_140px_1fr]">
-                <div className="font-medium">Repair #{repair.repair_number}</div>
-                <div className="text-sm text-muted-foreground">
-                  {repair.repair_date}
-                </div>
-                <div className="text-sm">
-                  {repair.summary_en ||
-                    repair.public_notes_en ||
-                    "Repair details available."}
-                </div>
-              </div>
-            </Link>
-          ))}
+              <Box>
+                <Typography component="h2" sx={{ fontSize: 24, fontWeight: 800 }}>
+                  Product Traceability
+                </Typography>
+                <Typography color="text.secondary" sx={{ mt: 1 }}>
+                  Public repair records linked to this product nameplate.
+                </Typography>
+              </Box>
+              <Chip
+                color="primary"
+                label={`${repairs.length} completed repair${repairs.length === 1 ? "" : "s"}`}
+                sx={{ alignSelf: { xs: "flex-start", md: "center" } }}
+              />
+            </Stack>
 
-          {repairs.length === 0 ? (
-            <div className="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
-              No public repair records are available for this product yet.
-            </div>
-          ) : null}
-        </CardContent>
-      </Card>
-    </main>
-  );
-}
+            <Box
+              sx={{
+                display: "grid",
+                gap: 3,
+                gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" },
+              }}
+            >
+              <InfoTile label="Serial Number" value={product.serial_number} />
+              <InfoTile
+                label="Product Source"
+                value={
+                  product.product_source === "own"
+                    ? "Manufactured Product"
+                    : "Customer Supplied Product"
+                }
+              />
+              <InfoTile
+                label="Product Type"
+                value={publicProductTypeLabel(product.product_type)}
+              />
+              {product.product_source === "own" ? (
+                <>
+                  <InfoTile label="Production Date" value={product.production_date} />
+                  <InfoTile label="Model" value={product.production_model} />
+                  <InfoTile label="Material" value={publicMaterialLabel(product.material)} />
+                  <InfoTile label="Size" value={product.size} />
+                </>
+              ) : null}
+            </Box>
+          </Paper>
 
-function Info({
-  label,
-  value,
-}: {
-  label: string;
-  value: string | null | undefined;
-}) {
-  return (
-    <div className="grid gap-1">
-      <div className="text-sm text-muted-foreground">{label}</div>
-      <div className="text-sm">{value || "Not provided"}</div>
-    </div>
+          <Paper square variant="outlined" sx={{ p: { xs: 2, md: 4 } }}>
+            <Typography component="h2" sx={{ fontSize: 24, fontWeight: 800, px: { xs: 1, md: 0 } }}>
+              Repair Records
+            </Typography>
+
+            {repairs.length > 0 ? (
+              <Timeline
+                position="right"
+                sx={{
+                  m: 0,
+                  mt: 2,
+                  p: 0,
+                  "& .MuiTimelineItem-root:before": { display: "none" },
+                }}
+              >
+                {repairs.map((repair, index) => (
+                  <TimelineItem key={repair.id}>
+                    <TimelineSeparator>
+                      <TimelineDot color="primary" variant="filled" />
+                      {index < repairs.length - 1 ? <TimelineConnector /> : null}
+                    </TimelineSeparator>
+                    <TimelineContent sx={{ pb: 3 }}>
+                      <Link
+                        href={`/t/${encodeURIComponent(product.serial_number)}/repairs/${repair.id}`}
+                        style={{ color: "inherit", textDecoration: "none" }}
+                      >
+                        <Paper
+                          square
+                          sx={{
+                            border: "1px solid",
+                            borderColor: "divider",
+                            color: "text.primary",
+                            display: "block",
+                            p: 3,
+                            transition: "border-color .15s ease, box-shadow .15s ease",
+                            "&:hover": {
+                              borderColor: "primary.main",
+                              boxShadow: "0 8px 28px rgba(0,0,0,0.08)",
+                            },
+                          }}
+                        >
+                          <Stack
+                            direction={{ xs: "column", md: "row" }}
+                            spacing={2}
+                            sx={{ justifyContent: "space-between" }}
+                          >
+                            <Box>
+                              <Typography sx={{ fontSize: 20, fontWeight: 800 }}>
+                                Repair #{repair.repair_number}
+                              </Typography>
+                              <Typography color="text.secondary" sx={{ mt: 1 }}>
+                                {repair.summary_en ||
+                                  repair.public_notes_en ||
+                                  "Repair details available."}
+                              </Typography>
+                            </Box>
+                            <Stack spacing={1} sx={{ alignItems: { xs: "flex-start", md: "flex-end" } }}>
+                              <Chip label="Completed" size="small" />
+                              <Typography color="text.secondary" sx={{ fontFamily: "monospace" }}>
+                                {repair.repair_date}
+                              </Typography>
+                            </Stack>
+                          </Stack>
+                        </Paper>
+                      </Link>
+                    </TimelineContent>
+                  </TimelineItem>
+                ))}
+              </Timeline>
+            ) : (
+              <Box
+                sx={{
+                  border: "1px dashed",
+                  borderColor: "divider",
+                  color: "text.secondary",
+                  mt: 3,
+                  p: 5,
+                  textAlign: "center",
+                }}
+              >
+                No public repair records are available for this product yet.
+              </Box>
+            )}
+          </Paper>
+
+          <Button href="/" sx={{ alignSelf: "flex-start" }} variant="outlined">
+            Search another serial
+          </Button>
+        </Stack>
+      </Container>
+    </PublicMain>
   );
 }
 

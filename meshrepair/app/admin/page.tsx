@@ -1,65 +1,56 @@
-import Link from "next/link";
+import Button from "@mui/material/Button";
+import Paper from "@mui/material/Paper";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
 import { Suspense } from "react";
 
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { AdminPageShell } from "@/components/admin/admin-shell";
 import { requireAdmin } from "@/lib/auth/admin";
 
 async function AdminContent() {
   await requireAdmin();
 
   return (
-    <div className="flex w-full flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <p className="text-sm text-muted-foreground">Mesh Repair Service</p>
-        <h1 className="text-3xl font-semibold">管理后台</h1>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>产品追溯</CardTitle>
-            <CardDescription>
-              浏览产品、创建铭牌序列号、管理二维码和维修记录。
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild>
-              <Link href="/admin/products">进入产品列表</Link>
+    <AdminPageShell
+      subtitle="创建产品铭牌、管理维修记录、维护客户可见的追溯页面。"
+      title="管理后台"
+    >
+      <Stack direction={{ xs: "column", md: "row" }} spacing={2.5}>
+        {[
+          {
+            action: "进入产品列表",
+            description: "浏览产品、创建铭牌序列号、管理二维码和维修记录。",
+            href: "/admin/products",
+            title: "产品追溯",
+            variant: "contained" as const,
+          },
+          {
+            action: "新增产品",
+            description: "为本厂产品或客户送修产品创建唯一序列号和二维码。",
+            href: "/admin/products/new",
+            title: "新增产品",
+            variant: "outlined" as const,
+          },
+        ].map((item) => (
+          <Paper key={item.href} square variant="outlined" sx={{ flex: 1, p: 3 }}>
+            <Typography sx={{ fontSize: 22, fontWeight: 800 }}>{item.title}</Typography>
+            <Typography color="text.secondary" sx={{ lineHeight: 1.7, my: 2 }}>
+              {item.description}
+            </Typography>
+            <Button href={item.href} variant={item.variant}>
+              {item.action}
             </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>新增产品</CardTitle>
-            <CardDescription>
-              为本厂产品或客户送修产品创建唯一序列号和二维码。
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild variant="outline">
-              <Link href="/admin/products/new">新增产品</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+          </Paper>
+        ))}
+      </Stack>
+    </AdminPageShell>
   );
 }
 
 export default function AdminPage() {
   return (
-    <main className="mx-auto flex min-h-svh w-full max-w-5xl flex-col gap-6 px-6 py-10">
-      <Suspense>
-        <AdminContent />
-      </Suspense>
-    </main>
+    <Suspense>
+      <AdminContent />
+    </Suspense>
   );
 }

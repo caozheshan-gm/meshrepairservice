@@ -35,7 +35,7 @@ export async function getPublicRepairRecord(serial: string, repairId: string) {
 
   const { data: repair, error: repairError } = await supabase
     .from("repair_records")
-    .select("id,repair_number,repair_date,status,summary_en,public_notes_en,repair_tasks(*),repair_images(*)")
+    .select("id,repair_number,received_date,repair_date,status,factory,summary_en,public_notes_en,repair_tasks(*),repair_images(*)")
     .eq("id", repairId)
     .eq("product_id", product.id)
     .eq("status", "completed")

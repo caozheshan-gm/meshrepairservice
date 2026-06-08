@@ -1,57 +1,78 @@
+"use client";
+
+import MuiButton, { type ButtonProps as MuiButtonProps } from "@mui/material/Button";
 import * as React from "react";
-import { Slot } from "@radix-ui/react-slot";
-import { cva, type VariantProps } from "class-variance-authority";
 
-import { cn } from "@/lib/utils";
-
-const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
-  {
-    variants: {
-      variant: {
-        default:
-          "bg-primary text-primary-foreground shadow hover:bg-primary/90",
-        destructive:
-          "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
-        outline:
-          "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
-        secondary:
-          "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
-      },
-      size: {
-        default: "h-9 px-4 py-2",
-        sm: "h-8 rounded-md px-3 text-xs",
-        lg: "h-10 rounded-md px-8",
-        icon: "h-9 w-9",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-      size: "default",
-    },
-  },
-);
+type ButtonVariant = "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+type ButtonSize = "default" | "sm" | "lg" | "icon";
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "color"> {
   asChild?: boolean;
+  size?: ButtonSize;
+  variant?: ButtonVariant;
+}
+
+function mapVariant(variant: ButtonVariant | undefined): Pick<MuiButtonProps, "color" | "variant"> {
+  switch (variant) {
+    case "outline":
+      return { color: "secondary", variant: "outlined" };
+    case "secondary":
+      return { color: "secondary", variant: "contained" };
+    case "ghost":
+    case "link":
+      return { color: "secondary", variant: "text" };
+    case "destructive":
+      return { color: "error", variant: "contained" };
+    default:
+      return { color: "primary", variant: "contained" };
+  }
+}
+
+function mapSize(size: ButtonSize | undefined): MuiButtonProps["size"] {
+  if (size === "sm" || size === "icon") return "small";
+  if (size === "lg") return "large";
+  return "medium";
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : "button";
+  ({ asChild = false, children, className, size, variant, ...props }, ref) => {
+    const mappedVariant = mapVariant(variant);
+    const muiClassName = [
+      "MuiButtonBase-root",
+      "MuiButton-root",
+      `MuiButton-${mappedVariant.variant}`,
+      `MuiButton-${mappedVariant.variant}${mappedVariant.color?.[0]?.toUpperCase()}${mappedVariant.color?.slice(1)}`,
+      "inline-flex items-center justify-center",
+      className,
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    if (asChild) {
+      if (!React.isValidElement<{ className?: string }>(children)) {
+        throw new Error("Button with asChild expects a single React element child.");
+      }
+
+      return React.cloneElement(children, {
+        className: [muiClassName, children.props.className].filter(Boolean).join(" "),
+        ...props,
+      });
+    }
+
     return (
-      <Comp
-        className={cn(buttonVariants({ variant, size, className }))}
+      <MuiButton
+        className={className}
         ref={ref}
+        size={mapSize(size)}
+        {...mappedVariant}
         {...props}
-      />
+      >
+        {children}
+      </MuiButton>
     );
   },
 );
 Button.displayName = "Button";
 
-export { Button, buttonVariants };
+export { Button };

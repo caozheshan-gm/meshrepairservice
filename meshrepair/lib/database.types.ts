@@ -184,11 +184,13 @@ export type Database = {
           nameplate_code: string | null
           product_id: string
           public_notes_en: string | null
+          received_date: string | null
           repair_date: string
           repair_number: number
           status: string
           summary_en: string | null
           summary_zh: string | null
+          tracking_owner: string | null
           updated_at: string
         }
         Insert: {
@@ -200,11 +202,13 @@ export type Database = {
           nameplate_code?: string | null
           product_id: string
           public_notes_en?: string | null
+          received_date?: string | null
           repair_date: string
           repair_number: number
           status?: string
           summary_en?: string | null
           summary_zh?: string | null
+          tracking_owner?: string | null
           updated_at?: string
         }
         Update: {
@@ -216,11 +220,13 @@ export type Database = {
           nameplate_code?: string | null
           product_id?: string
           public_notes_en?: string | null
+          received_date?: string | null
           repair_date?: string
           repair_number?: number
           status?: string
           summary_en?: string | null
           summary_zh?: string | null
+          tracking_owner?: string | null
           updated_at?: string
         }
         Relationships: [

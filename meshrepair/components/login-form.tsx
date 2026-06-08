@@ -1,25 +1,23 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import Alert from "@mui/material/Alert";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export function LoginForm({
   className,
+  redirectTo,
   ...props
-}: React.ComponentPropsWithoutRef<"div">) {
+}: React.ComponentPropsWithoutRef<"div"> & {
+  redirectTo?: string;
+}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +36,12 @@ export function LoginForm({
         password,
       });
       if (error) throw error;
-      router.push("/admin");
+      const nextPath =
+        redirectTo?.startsWith("/") && !redirectTo.startsWith("//")
+          ? redirectTo
+          : "/admin";
+      router.replace(nextPath);
+      router.refresh();
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
@@ -47,54 +50,54 @@ export function LoginForm({
   };
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Login</CardTitle>
-          <CardDescription>
-            Enter your email below to login to your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin}>
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="m@example.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
+    <div className={className} {...props}>
+      <Stack spacing={3}>
+        <Stack spacing={1}>
+          <Typography component="h2" sx={{ fontSize: 30, fontWeight: 800 }}>
+            Admin Login
+          </Typography>
+          <Typography color="text.secondary">
+            Enter your email and password to continue.
+          </Typography>
+        </Stack>
+        <form onSubmit={handleLogin}>
+          <Stack spacing={2.5}>
+            <Stack spacing={1}>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="m@example.com"
+                required
+                type="email"
+                value={email}
+              />
+            </Stack>
+            <Stack spacing={1}>
+              <div className="flex items-center">
+                <Label htmlFor="password">Password</Label>
+                <Link
+                  className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
+                  href="/auth/forgot-password"
+                >
+                  Forgot your password?
+                </Link>
               </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                  <Link
-                    href="/auth/forgot-password"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                  >
-                    Forgot your password?
-                  </Link>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Logging in..." : "Login"}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+              <Input
+                id="password"
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                type="password"
+                value={password}
+              />
+            </Stack>
+            {error ? <Alert severity="error">{error}</Alert> : null}
+            <Button className="w-full" disabled={isLoading} type="submit">
+              {isLoading ? "Logging in..." : "Login"}
+            </Button>
+          </Stack>
+        </form>
+      </Stack>
     </div>
   );
 }

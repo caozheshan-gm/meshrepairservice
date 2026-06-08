@@ -1,72 +1,96 @@
-import Link from "next/link";
 import { Suspense } from "react";
+import Box from "@mui/material/Box";
+import Container from "@mui/material/Container";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
 
-import { searchBySerial } from "@/app/search/actions";
 import { AuthButton } from "@/components/auth-button";
-import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+  LookupPanel,
+  PageHero,
+  PublicHeader,
+  PublicMain,
+} from "@/components/public/hemlock-public";
+import { SerialSearchForm } from "@/components/serial-search-form";
 
 export default function Home() {
   return (
-    <main className="mx-auto flex min-h-svh w-full max-w-5xl flex-col gap-8 px-6 py-8">
-      <nav className="flex items-center justify-between gap-4 border-b pb-4 text-sm">
-        <Link className="font-semibold" href="/">
-          Mesh Repair Service
-        </Link>
+    <PublicMain>
+      <PublicHeader>
         <Suspense>
-          <AuthButton />
+          <AuthButton showLoggedOut={false} />
         </Suspense>
-      </nav>
+      </PublicHeader>
 
-      <section className="grid flex-1 gap-6 md:grid-cols-[1.3fr_0.7fr] md:items-start">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">Product Traceability</CardTitle>
-            <CardDescription>
-              Enter the exact serial number from the product nameplate to view
-              public repair history.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form action={searchBySerial} className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="serial">Serial Number</Label>
-                <Input
-                  autoCapitalize="characters"
-                  id="serial"
-                  name="serial"
-                  placeholder="REP-2026-06-000001"
-                  required
-                />
-              </div>
-              <Button type="submit">Search Repair History</Button>
-            </form>
-          </CardContent>
-        </Card>
+      <Container maxWidth="lg" sx={{ py: { xs: 6, md: 8 } }}>
+        <Stack spacing={{ xs: 5, md: 7 }}>
+          <PageHero
+            eyebrow="Product support"
+            meta={
+              <>
+                Enter the serial number printed on the product nameplate to view
+                public service records, completed repair work, and available
+                before and after documentation.
+              </>
+            }
+            title="Check repair history by serial number"
+          />
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Admin</CardTitle>
-            <CardDescription>
-              Create product nameplates, manage serial numbers, and update
-              repair records.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild>
-              <Link href="/admin">Open Admin</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </section>
-    </main>
+          <LookupPanel
+            side={
+              <Stack spacing={2.4}>
+                <Typography sx={{ fontWeight: 800 }}>What you can view</Typography>
+                {[
+                  "Product identification and nameplate details",
+                  "Completed repair records by date",
+                  "Repair items, results, and service notes",
+                  "Before and after repair photos when available",
+                ].map((item) => (
+                  <Typography color="text.secondary" key={item} sx={{ lineHeight: 1.55 }}>
+                    {item}
+                  </Typography>
+                ))}
+              </Stack>
+            }
+          >
+            <Box sx={{ maxWidth: 620 }}>
+              <Typography component="h2" sx={{ fontSize: 24, fontWeight: 800, mb: 1.5 }}>
+                Repair status lookup
+              </Typography>
+              <Typography color="text.secondary" sx={{ lineHeight: 1.8, mb: 4 }}>
+                Use the exact serial number from the product label. Search
+                results only include active products and completed public repair
+                records.
+              </Typography>
+              <SerialSearchForm buttonLabel="Check status" />
+            </Box>
+          </LookupPanel>
+
+          <Box
+            sx={{
+              display: "grid",
+              gap: 2,
+              gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" },
+            }}
+          >
+            {[
+              ["Serial number", "Match the full value shown on the product nameplate."],
+              ["Repair records", "Public records are shown after the repair is completed."],
+              ["Service support", "Contact the service team if a serial number cannot be found."],
+            ].map(([title, description]) => (
+              <Box
+                key={title}
+                sx={{ borderLeft: "4px solid", borderColor: "primary.main", pl: 2 }}
+              >
+                <Typography sx={{ fontWeight: 800 }}>{title}</Typography>
+                <Typography color="text.secondary" sx={{ lineHeight: 1.7, mt: 0.75 }}>
+                  {description}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </Stack>
+      </Container>
+    </PublicMain>
   );
 }

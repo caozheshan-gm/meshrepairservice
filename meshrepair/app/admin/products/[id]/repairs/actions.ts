@@ -91,9 +91,11 @@ export async function createRepairRecord(formData: FormData) {
     .insert({
       product_id: productId,
       repair_number: repairNumber,
+      received_date: optionalText(formData, "received_date"),
       repair_date: requiredText(formData, "repair_date", "请填写维修日期。"),
       status: optionalText(formData, "status") ?? "completed",
       factory: optionalText(formData, "factory"),
+      tracking_owner: optionalText(formData, "tracking_owner"),
       internal_code: optionalText(formData, "internal_code"),
       nameplate_code: optionalText(formData, "nameplate_code"),
       summary_zh: optionalText(formData, "summary_zh"),
@@ -124,7 +126,7 @@ export async function createRepairRecord(formData: FormData) {
   }
 
   revalidatePath(`/admin/products/${productId}`);
-  redirect(`/admin/products/${productId}`);
+  redirect(`/admin/products/${productId}/repairs/${repairRecord.id}/edit`);
 }
 
 export async function updateRepairRecord(formData: FormData) {
@@ -135,9 +137,11 @@ export async function updateRepairRecord(formData: FormData) {
   const { error: repairUpdateError } = await supabase
     .from("repair_records")
     .update({
+      received_date: optionalText(formData, "received_date"),
       repair_date: requiredText(formData, "repair_date", "请填写维修日期。"),
       status: optionalText(formData, "status") ?? "completed",
       factory: optionalText(formData, "factory"),
+      tracking_owner: optionalText(formData, "tracking_owner"),
       internal_code: optionalText(formData, "internal_code"),
       nameplate_code: optionalText(formData, "nameplate_code"),
       summary_zh: optionalText(formData, "summary_zh"),

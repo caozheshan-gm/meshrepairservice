@@ -30,7 +30,7 @@ async function getSiteOrigin() {
   return `${protocol}://${host}`;
 }
 
-export async function createProduct(formData: FormData) {
+export async function createProduct(_prevState: unknown, formData: FormData) {
   const { supabase } = await requireAdmin();
   const productSource = formData.get("product_source");
 
