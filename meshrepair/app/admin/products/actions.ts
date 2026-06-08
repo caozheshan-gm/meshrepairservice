@@ -105,3 +105,83 @@ export async function createProduct(formData: FormData) {
   revalidatePath("/admin/products");
   redirect(`/admin/products?serial=${encodeURIComponent(product.serial_number)}`);
 }
+
+export async function updateProduct(formData: FormData) {
+  const { supabase } = await requireAdmin();
+  const productId = optionalText(formData, "product_id");
+
+  if (!productId) {
+    throw new Error("缺少产品 ID。");
+  }
+
+  const { data: currentProduct, error: productSelectError } = await supabase
+    .from("products")
+    .select("id,customer_id")
+    .eq("id", productId)
+    .single();
+
+  if (productSelectError) {
+    throw new Error(productSelectError.message);
+  }
+
+  const customerCompany = optionalText(formData, "customer_company");
+  let customerId: string | null = currentProduct.customer_id;
+
+  if (customerCompany && customerId) {
+    const { error: customerUpdateError } = await supabase
+      .from("customers")
+      .update({
+        company_name: customerCompany,
+        contact_name: optionalText(formData, "contact_name"),
+        contact_email: optionalText(formData, "contact_email"),
+        contact_phone: optionalText(formData, "contact_phone"),
+      })
+      .eq("id", customerId);
+
+    if (customerUpdateError) {
+      throw new Error(customerUpdateError.message);
+    }
+  } else if (customerCompany) {
+    const { data: newCustomer, error: customerInsertError } = await supabase
+      .from("customers")
+      .insert({
+        company_name: customerCompany,
+        contact_name: optionalText(formData, "contact_name"),
+        contact_email: optionalText(formData, "contact_email"),
+        contact_phone: optionalText(formData, "contact_phone"),
+      })
+      .select("id")
+      .single();
+
+    if (customerInsertError) {
+      throw new Error(customerInsertError.message);
+    }
+
+    customerId = newCustomer.id;
+  } else {
+    customerId = null;
+  }
+
+  const { error: productUpdateError } = await supabase
+    .from("products")
+    .update({
+      customer_id: customerId,
+      product_type: optionalText(formData, "product_type"),
+      nameplate_text: optionalText(formData, "nameplate_text"),
+      production_date: optionalText(formData, "production_date"),
+      production_model: optionalText(formData, "production_model"),
+      production_batch: optionalText(formData, "production_batch"),
+      material: optionalText(formData, "material"),
+      size: optionalText(formData, "size"),
+      internal_notes: optionalText(formData, "internal_notes"),
+    })
+    .eq("id", productId);
+
+  if (productUpdateError) {
+    throw new Error(productUpdateError.message);
+  }
+
+  revalidatePath("/admin/products");
+  revalidatePath(`/admin/products/${productId}`);
+  redirect(`/admin/products/${productId}`);
+}
