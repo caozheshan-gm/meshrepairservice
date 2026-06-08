@@ -4,6 +4,14 @@ import { Suspense } from "react";
 
 import { updateRepairRecord } from "@/app/admin/products/[id]/repairs/actions";
 import { RepairForm } from "@/app/admin/products/[id]/repairs/new/page";
+import { RepairImageUploader } from "@/components/admin/repair-image-uploader";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { requireAdmin } from "@/lib/auth/admin";
 
 type EditRepairPageProps = {
@@ -26,7 +34,7 @@ async function EditRepairContent({ params }: EditRepairPageProps) {
 
   const { data: repair, error: repairError } = await supabase
     .from("repair_records")
-    .select("*,repair_tasks(*)")
+    .select("*,repair_tasks(*),repair_images(*)")
     .eq("id", repairId)
     .eq("product_id", product.id)
     .single();
@@ -77,6 +85,21 @@ async function EditRepairContent({ params }: EditRepairPageProps) {
         repairId={repair.id}
         tasks={tasks}
       />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>维修图片</CardTitle>
+          <CardDescription>上传维修前、维修后或其他补充图片。</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <RepairImageUploader
+            existingImages={[...repair.repair_images].sort(
+              (a, b) => a.sort_order - b.sort_order,
+            )}
+            repairRecordId={repair.id}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }
