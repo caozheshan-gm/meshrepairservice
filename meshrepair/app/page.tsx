@@ -60,12 +60,9 @@ export default function Home() {
               repair records.
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-3">
+          <CardContent>
             <Button asChild>
               <Link href="/admin">Open Admin</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/auth/login">Admin Login</Link>
             </Button>
           </CardContent>
         </Card>
