@@ -38,6 +38,7 @@ export function RepairImageUploader({
   const [captionEn, setCaptionEn] = useState("");
   const [files, setFiles] = useState<FileList | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const supabase = createClient();
 
@@ -95,6 +96,41 @@ export function RepairImageUploader({
   function getPublicUrl(storagePath: string) {
     return supabase.storage.from("repair-images").getPublicUrl(storagePath).data
       .publicUrl;
+  }
+
+  async function deleteImage(image: RepairImage) {
+    const confirmed = window.confirm("确定删除这张图片吗？此操作不可撤销。");
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingImageId(image.id);
+    setErrorMessage(null);
+
+    const { error: storageError } = await supabase.storage
+      .from("repair-images")
+      .remove([image.storage_path]);
+
+    if (storageError) {
+      setErrorMessage(storageError.message);
+      setDeletingImageId(null);
+      return;
+    }
+
+    const { error: metadataError } = await supabase
+      .from("repair_images")
+      .delete()
+      .eq("id", image.id);
+
+    if (metadataError) {
+      setErrorMessage(metadataError.message);
+      setDeletingImageId(null);
+      return;
+    }
+
+    setDeletingImageId(null);
+    router.refresh();
   }
 
   return (
@@ -156,12 +192,9 @@ export function RepairImageUploader({
 
       <div className="grid gap-3 md:grid-cols-3">
         {existingImages.map((image) => (
-          <a
-            className="grid gap-2 rounded-md border p-3 transition-colors hover:bg-muted/40"
-            href={getPublicUrl(image.storage_path)}
+          <div
+            className="grid gap-3 rounded-md border p-3"
             key={image.id}
-            rel="noreferrer"
-            target="_blank"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -177,7 +210,26 @@ export function RepairImageUploader({
                 {image.caption_zh || image.caption_en || "无说明"}
               </div>
             </div>
-          </a>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Button asChild type="button" variant="outline">
+                <a
+                  href={getPublicUrl(image.storage_path)}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  打开原图
+                </a>
+              </Button>
+              <Button
+                disabled={deletingImageId === image.id}
+                onClick={() => deleteImage(image)}
+                type="button"
+                variant="destructive"
+              >
+                {deletingImageId === image.id ? "删除中..." : "删除"}
+              </Button>
+            </div>
+          </div>
         ))}
       </div>
 

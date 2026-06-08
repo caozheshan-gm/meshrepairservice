@@ -66,6 +66,22 @@ async function EditProductContent({ params }: EditProductPageProps) {
               />
             </div>
 
+            <div className="grid gap-2">
+              <Label htmlFor="status">产品状态</Label>
+              <select
+                className="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm"
+                defaultValue={product.status}
+                id="status"
+                name="status"
+              >
+                <option value="active">公开使用</option>
+                <option value="archived">归档隐藏</option>
+              </select>
+              <p className="text-sm text-muted-foreground">
+                归档后客户公开追溯页不可访问，后台仍会保留记录。
+              </p>
+            </div>
+
             <div className="grid gap-4 md:grid-cols-2">
               <div className="grid gap-2">
                 <Label htmlFor="customer_company">客户公司</Label>

@@ -73,7 +73,10 @@ async function ProductDetailContent({ params }: ProductDetailPageProps) {
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="aspect-square w-full max-w-64 justify-self-center">
-              <ProductQrCode value={product.qr_url} />
+              <ProductQrCode
+                fileName={`${product.serial_number}-qr`}
+                value={product.qr_url}
+              />
             </div>
             <div className="grid gap-1 text-sm">
               <div className="text-muted-foreground">QR URL</div>

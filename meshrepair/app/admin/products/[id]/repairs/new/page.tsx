@@ -121,7 +121,11 @@ export function RepairForm({
               >
                 <option value="completed">已完成</option>
                 <option value="draft">草稿</option>
+                <option value="archived">归档隐藏</option>
               </select>
+              <p className="text-sm text-muted-foreground">
+                只有“已完成”的维修记录会显示在客户公开页。
+              </p>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="factory">维修工厂</Label>

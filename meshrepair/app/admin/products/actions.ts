@@ -166,6 +166,7 @@ export async function updateProduct(formData: FormData) {
     .from("products")
     .update({
       customer_id: customerId,
+      status: optionalText(formData, "status") ?? "active",
       product_type: optionalText(formData, "product_type"),
       nameplate_text: optionalText(formData, "nameplate_text"),
       production_date: optionalText(formData, "production_date"),
