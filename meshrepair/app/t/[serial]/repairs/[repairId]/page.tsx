@@ -13,12 +13,6 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
-import Timeline from "@mui/lab/Timeline";
-import TimelineConnector from "@mui/lab/TimelineConnector";
-import TimelineContent from "@mui/lab/TimelineContent";
-import TimelineDot from "@mui/lab/TimelineDot";
-import TimelineItem from "@mui/lab/TimelineItem";
-import TimelineSeparator from "@mui/lab/TimelineSeparator";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
@@ -32,6 +26,7 @@ import {
   PublicHeader,
   PublicMain,
 } from "@/components/public/hemlock-public";
+import { RepairTimeline } from "@/components/public/repair-timeline";
 import { getPublicRepairRecord } from "@/lib/public-data";
 import { publicProductTypeLabel } from "@/lib/public-labels";
 
@@ -116,6 +111,10 @@ async function PublicRepairContent({ params }: PublicRepairPageProps) {
                 value={publicProductTypeLabel(product.product_type)}
               />
               <InfoTile label="Serial Number" value={product.serial_number} />
+              <InfoTile
+                label="Customer Repair Batch No."
+                value={repair.customer_repair_batch_no}
+              />
             </Box>
           </Paper>
 
@@ -123,28 +122,35 @@ async function PublicRepairContent({ params }: PublicRepairPageProps) {
             <Typography component="h2" sx={{ fontSize: 24, fontWeight: 800, mb: 3 }}>
               Service Progress
             </Typography>
-            <Timeline
-              position="right"
-              sx={{ m: 0, p: 0, "& .MuiTimelineItem-root:before": { display: "none" } }}
-            >
-              {[
-                ["Received", repair.received_date || "Not provided"],
-                ["Inspection", "Product condition reviewed"],
-                ["Repair", "Corrective actions completed"],
-                ["Qualified", repair.repair_date || "Not provided"],
-              ].map(([label, value], index, items) => (
-                <TimelineItem key={label}>
-                  <TimelineSeparator>
-                    <TimelineDot color="primary" />
-                    {index < items.length - 1 ? <TimelineConnector /> : null}
-                  </TimelineSeparator>
-                  <TimelineContent sx={{ pb: 2.5 }}>
-                    <Typography sx={{ fontWeight: 800 }}>{label}</Typography>
-                    <Typography color="text.secondary">{value}</Typography>
-                  </TimelineContent>
-                </TimelineItem>
-              ))}
-            </Timeline>
+            <RepairTimeline
+              entries={[
+                {
+                  date: repair.received_date || "Not provided",
+                  description: "Product received by the service team.",
+                  icon: "inspection",
+                  status: "completed",
+                  title: "Received",
+                },
+                {
+                  description: "Product condition reviewed and service scope confirmed.",
+                  icon: "inspection",
+                  status: "completed",
+                  title: "Inspection",
+                },
+                {
+                  description: "Corrective actions completed according to the repair process.",
+                  icon: "repair",
+                  status: "completed",
+                  title: "Repair",
+                },
+                {
+                  date: repair.repair_date || "Not provided",
+                  description: "Repair completed and qualified for public tracking.",
+                  status: "completed",
+                  title: "Qualified",
+                },
+              ]}
+            />
           </Paper>
 
           <Paper square variant="outlined" sx={{ p: { xs: 2, md: 4 } }}>

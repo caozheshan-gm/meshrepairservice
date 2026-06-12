@@ -30,6 +30,48 @@ async function getSiteOrigin() {
   return `${protocol}://${host}`;
 }
 
+async function resolveCustomerId(
+  supabase: Awaited<ReturnType<typeof requireAdmin>>["supabase"],
+  formData: FormData,
+) {
+  const customerCompany = optionalText(formData, "customer_company");
+
+  if (!customerCompany) {
+    return null;
+  }
+
+  const { data: existingCustomer, error: customerSelectError } = await supabase
+    .from("customers")
+    .select("id")
+    .eq("company_name", customerCompany)
+    .maybeSingle();
+
+  if (customerSelectError) {
+    throw new Error(customerSelectError.message);
+  }
+
+  if (existingCustomer) {
+    return existingCustomer.id;
+  }
+
+  const { data: newCustomer, error: customerInsertError } = await supabase
+    .from("customers")
+    .insert({
+      company_name: customerCompany,
+      contact_name: optionalText(formData, "contact_name"),
+      contact_email: optionalText(formData, "contact_email"),
+      contact_phone: optionalText(formData, "contact_phone"),
+    })
+    .select("id")
+    .single();
+
+  if (customerInsertError) {
+    throw new Error(customerInsertError.message);
+  }
+
+  return newCustomer.id;
+}
+
 export async function createProduct(_prevState: unknown, formData: FormData) {
   const { supabase } = await requireAdmin();
   const productSource = formData.get("product_source");
@@ -38,41 +80,7 @@ export async function createProduct(_prevState: unknown, formData: FormData) {
     throw new Error("请选择有效的产品来源。");
   }
 
-  const customerCompany = optionalText(formData, "customer_company");
-  let customerId: string | null = null;
-
-  if (customerCompany) {
-    const { data: existingCustomer, error: customerSelectError } = await supabase
-      .from("customers")
-      .select("id")
-      .eq("company_name", customerCompany)
-      .maybeSingle();
-
-    if (customerSelectError) {
-      throw new Error(customerSelectError.message);
-    }
-
-    if (existingCustomer) {
-      customerId = existingCustomer.id;
-    } else {
-      const { data: newCustomer, error: customerInsertError } = await supabase
-        .from("customers")
-        .insert({
-          company_name: customerCompany,
-          contact_name: optionalText(formData, "contact_name"),
-          contact_email: optionalText(formData, "contact_email"),
-          contact_phone: optionalText(formData, "contact_phone"),
-        })
-        .select("id")
-        .single();
-
-      if (customerInsertError) {
-        throw new Error(customerInsertError.message);
-      }
-
-      customerId = newCustomer.id;
-    }
-  }
+  const customerId = await resolveCustomerId(supabase, formData);
 
   const serialNumber = await generateSerialNumber(supabase, productSource);
   const origin = await getSiteOrigin();
@@ -114,9 +122,9 @@ export async function updateProduct(formData: FormData) {
     throw new Error("缺少产品 ID。");
   }
 
-  const { data: currentProduct, error: productSelectError } = await supabase
+  const { error: productSelectError } = await supabase
     .from("products")
-    .select("id,customer_id")
+    .select("id")
     .eq("id", productId)
     .single();
 
@@ -124,43 +132,7 @@ export async function updateProduct(formData: FormData) {
     throw new Error(productSelectError.message);
   }
 
-  const customerCompany = optionalText(formData, "customer_company");
-  let customerId: string | null = currentProduct.customer_id;
-
-  if (customerCompany && customerId) {
-    const { error: customerUpdateError } = await supabase
-      .from("customers")
-      .update({
-        company_name: customerCompany,
-        contact_name: optionalText(formData, "contact_name"),
-        contact_email: optionalText(formData, "contact_email"),
-        contact_phone: optionalText(formData, "contact_phone"),
-      })
-      .eq("id", customerId);
-
-    if (customerUpdateError) {
-      throw new Error(customerUpdateError.message);
-    }
-  } else if (customerCompany) {
-    const { data: newCustomer, error: customerInsertError } = await supabase
-      .from("customers")
-      .insert({
-        company_name: customerCompany,
-        contact_name: optionalText(formData, "contact_name"),
-        contact_email: optionalText(formData, "contact_email"),
-        contact_phone: optionalText(formData, "contact_phone"),
-      })
-      .select("id")
-      .single();
-
-    if (customerInsertError) {
-      throw new Error(customerInsertError.message);
-    }
-
-    customerId = newCustomer.id;
-  } else {
-    customerId = null;
-  }
+  const customerId = await resolveCustomerId(supabase, formData);
 
   const { error: productUpdateError } = await supabase
     .from("products")
@@ -185,4 +157,64 @@ export async function updateProduct(formData: FormData) {
   revalidatePath("/admin/products");
   revalidatePath(`/admin/products/${productId}`);
   redirect(`/admin/products/${productId}`);
+}
+
+export async function deleteProducts(formData: FormData) {
+  const { supabase } = await requireAdmin();
+  const productIds = Array.from(new Set(formData.getAll("product_id")))
+    .filter((value): value is string => typeof value === "string")
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  if (productIds.length === 0) {
+    throw new Error("请选择要删除的产品。");
+  }
+
+  const { data: repairs, error: repairsError } = await supabase
+    .from("repair_records")
+    .select("id")
+    .in("product_id", productIds);
+
+  if (repairsError) {
+    throw new Error(repairsError.message);
+  }
+
+  const repairIds = repairs.map((repair) => repair.id);
+
+  if (repairIds.length > 0) {
+    const { data: images, error: imagesError } = await supabase
+      .from("repair_images")
+      .select("storage_path")
+      .in("repair_record_id", repairIds);
+
+    if (imagesError) {
+      throw new Error(imagesError.message);
+    }
+
+    const storagePaths = images
+      .map((image) => image.storage_path)
+      .filter(Boolean);
+
+    if (storagePaths.length > 0) {
+      const { error: storageError } = await supabase.storage
+        .from("repair-images")
+        .remove(storagePaths);
+
+      if (storageError) {
+        throw new Error(storageError.message);
+      }
+    }
+  }
+
+  const { error: deleteProductsError } = await supabase
+    .from("products")
+    .delete()
+    .in("id", productIds);
+
+  if (deleteProductsError) {
+    throw new Error(deleteProductsError.message);
+  }
+
+  revalidatePath("/admin/products");
+  redirect("/admin/products");
 }

@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 
-import { createClient } from "@/lib/supabase/server";
+import { findActiveSerialNumber } from "@/lib/public-data";
 
 export type SearchBySerialState = {
   error?: "missing_serial" | "not_found";
@@ -20,17 +20,11 @@ export async function searchBySerial(
   }
 
   const normalizedSerial = serial.trim();
-  const supabase = await createClient();
-  const { data: product, error } = await supabase
-    .from("products")
-    .select("serial_number")
-    .eq("serial_number", normalizedSerial)
-    .eq("status", "active")
-    .maybeSingle();
+  const serialNumber = await findActiveSerialNumber(normalizedSerial);
 
-  if (error || !product) {
+  if (!serialNumber) {
     return { error: "not_found", serial: normalizedSerial };
   }
 
-  redirect(`/t/${encodeURIComponent(product.serial_number)}`);
+  redirect(`/t/${encodeURIComponent(serialNumber)}`);
 }

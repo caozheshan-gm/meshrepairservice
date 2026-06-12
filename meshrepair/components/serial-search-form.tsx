@@ -6,6 +6,7 @@ import {
   searchBySerial,
   type SearchBySerialState,
 } from "@/app/search/actions";
+import { BlockingOverlay } from "@/components/ui/blocking-overlay";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,6 +40,7 @@ export function SerialSearchForm({
 
   return (
     <>
+      <BlockingOverlay message="Searching repair status..." open={isPending} />
       <form action={formAction} className={cn("grid gap-4", className)}>
         <div className="grid gap-2">
           <Label className="text-[13px] font-semibold" htmlFor="serial">

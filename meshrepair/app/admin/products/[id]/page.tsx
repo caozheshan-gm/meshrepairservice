@@ -1,25 +1,20 @@
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
-import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import Timeline from "@mui/lab/Timeline";
-import TimelineConnector from "@mui/lab/TimelineConnector";
-import TimelineContent from "@mui/lab/TimelineContent";
-import TimelineDot from "@mui/lab/TimelineDot";
-import TimelineItem from "@mui/lab/TimelineItem";
-import TimelineSeparator from "@mui/lab/TimelineSeparator";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
+import { deleteRepairRecord } from "@/app/admin/products/[id]/repairs/actions";
 import {
   AdminInfoTile,
   AdminPageShell,
   AdminPanel,
 } from "@/components/admin/admin-shell";
+import { DeleteRepairRecordButton } from "@/components/admin/delete-repair-record-button";
 import { ProductQrCode } from "@/components/admin/qr-code";
+import { RepairTimeline } from "@/components/public/repair-timeline";
 import { requireAdmin } from "@/lib/auth/admin";
 
 type ProductDetailPageProps = {
@@ -44,7 +39,7 @@ async function ProductDetailContent({ params }: ProductDetailPageProps) {
   const { data: product, error } = await supabase
     .from("products")
     .select(
-      "*,customers(company_name,contact_name,contact_email,contact_phone),repair_records(id,repair_number,repair_date,status,summary_zh,summary_en)",
+      "*,customers(company_name,contact_name,contact_email,contact_phone),repair_records(id,repair_number,customer_repair_batch_no,repair_date,status,summary_zh,summary_en)",
     )
     .eq("id", id)
     .single();
@@ -123,42 +118,50 @@ async function ProductDetailContent({ params }: ProductDetailPageProps) {
 
       <AdminPanel>
         <Typography sx={{ fontSize: 22, fontWeight: 800, mb: 2 }}>维修记录</Typography>
-        {repairs.length > 0 ? (
-          <Timeline
-            position="right"
-            sx={{ m: 0, p: 0, "& .MuiTimelineItem-root:before": { display: "none" } }}
-          >
-            {repairs.map((repair, index) => (
-              <TimelineItem key={repair.id}>
-                <TimelineSeparator>
-                  <TimelineDot color={repair.status === "completed" ? "primary" : "grey"} />
-                  {index < repairs.length - 1 ? <TimelineConnector /> : null}
-                </TimelineSeparator>
-                <TimelineContent sx={{ pb: 2.5 }}>
-                  <Link
-                    href={`/admin/products/${product.id}/repairs/${repair.id}/edit`}
-                    prefetch={false}
-                    style={{ color: "inherit", textDecoration: "none" }}
-                  >
-                    <Paper square variant="outlined" sx={{ p: 2.5 }}>
-                      <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{ justifyContent: "space-between" }}>
-                        <Box>
-                          <Typography sx={{ fontWeight: 800 }}>第 {repair.repair_number} 次维修</Typography>
-                          <Typography color="text.secondary">{repair.repair_date || "未填写日期"}</Typography>
-                        </Box>
-                        <Chip label={REPAIR_STATUS_LABELS[repair.status] ?? repair.status} size="small" variant="outlined" />
-                      </Stack>
-                    </Paper>
-                  </Link>
-                </TimelineContent>
-              </TimelineItem>
-            ))}
-          </Timeline>
-        ) : (
-          <Box sx={{ border: "1px dashed", borderColor: "divider", color: "text.secondary", p: 4, textAlign: "center" }}>
-            还没有维修记录。
-          </Box>
-        )}
+        <RepairTimeline
+          emptyText="还没有维修记录。"
+          entries={repairs.map((repair) => ({
+            actions: (
+              <>
+                <Button
+                  href={`/admin/products/${product.id}/repairs/${repair.id}/edit`}
+                  size="small"
+                  variant="outlined"
+                >
+                  编辑
+                </Button>
+                <DeleteRepairRecordButton
+                  action={deleteRepairRecord}
+                  productId={product.id}
+                  repairId={repair.id}
+                  repairNumber={repair.repair_number}
+                />
+              </>
+            ),
+            badge: (
+              <Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end" }}>
+                {repair.customer_repair_batch_no ? (
+                  <Chip
+                    label={`批次 ${repair.customer_repair_batch_no}`}
+                    size="small"
+                    variant="outlined"
+                  />
+                ) : null}
+                <Chip
+                  label={REPAIR_STATUS_LABELS[repair.status] ?? repair.status}
+                  size="small"
+                  variant="outlined"
+                />
+              </Stack>
+            ),
+            date: repair.repair_date || "未填写日期",
+            description: repair.summary_zh || repair.summary_en || "点击进入维修记录编辑页。",
+            icon: repair.status === "completed" ? "completed" : "draft",
+            status: repair.status === "completed" ? "completed" : "draft",
+            title: `第 ${repair.repair_number} 次维修`,
+          }))}
+          interactive
+        />
       </AdminPanel>
     </AdminPageShell>
   );

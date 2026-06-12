@@ -94,6 +94,7 @@ export async function createRepairRecord(formData: FormData) {
       received_date: optionalText(formData, "received_date"),
       repair_date: requiredText(formData, "repair_date", "请填写维修日期。"),
       status: optionalText(formData, "status") ?? "completed",
+      customer_repair_batch_no: optionalText(formData, "customer_repair_batch_no"),
       factory: optionalText(formData, "factory"),
       tracking_owner: optionalText(formData, "tracking_owner"),
       internal_code: optionalText(formData, "internal_code"),
@@ -140,6 +141,7 @@ export async function updateRepairRecord(formData: FormData) {
       received_date: optionalText(formData, "received_date"),
       repair_date: requiredText(formData, "repair_date", "请填写维修日期。"),
       status: optionalText(formData, "status") ?? "completed",
+      customer_repair_batch_no: optionalText(formData, "customer_repair_batch_no"),
       factory: optionalText(formData, "factory"),
       tracking_owner: optionalText(formData, "tracking_owner"),
       internal_code: optionalText(formData, "internal_code"),
@@ -182,5 +184,47 @@ export async function updateRepairRecord(formData: FormData) {
 
   revalidatePath(`/admin/products/${productId}`);
   revalidatePath(`/admin/products/${productId}/repairs/${repairId}/edit`);
+  redirect(`/admin/products/${productId}`);
+}
+
+export async function deleteRepairRecord(formData: FormData) {
+  const { supabase } = await requireAdmin();
+  const productId = requiredText(formData, "product_id", "缺少产品 ID。");
+  const repairId = requiredText(formData, "repair_id", "缺少维修记录 ID。");
+
+  const { data: images, error: imagesError } = await supabase
+    .from("repair_images")
+    .select("storage_path")
+    .eq("repair_record_id", repairId);
+
+  if (imagesError) {
+    throw new Error(imagesError.message);
+  }
+
+  const storagePaths = images
+    .map((image) => image.storage_path)
+    .filter(Boolean);
+
+  if (storagePaths.length > 0) {
+    const { error: storageError } = await supabase.storage
+      .from("repair-images")
+      .remove(storagePaths);
+
+    if (storageError) {
+      throw new Error(storageError.message);
+    }
+  }
+
+  const { error: deleteRepairError } = await supabase
+    .from("repair_records")
+    .delete()
+    .eq("id", repairId)
+    .eq("product_id", productId);
+
+  if (deleteRepairError) {
+    throw new Error(deleteRepairError.message);
+  }
+
+  revalidatePath(`/admin/products/${productId}`);
   redirect(`/admin/products/${productId}`);
 }

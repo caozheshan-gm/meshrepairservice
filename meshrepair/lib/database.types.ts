@@ -177,6 +177,7 @@ export type Database = {
       repair_records: {
         Row: {
           created_at: string
+          customer_repair_batch_no: string | null
           factory: string | null
           id: string
           internal_code: string | null
@@ -195,6 +196,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          customer_repair_batch_no?: string | null
           factory?: string | null
           id?: string
           internal_code?: string | null
@@ -213,6 +215,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          customer_repair_batch_no?: string | null
           factory?: string | null
           id?: string
           internal_code?: string | null

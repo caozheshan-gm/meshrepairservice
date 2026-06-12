@@ -144,6 +144,7 @@ type RepairFormProps = {
   repairId?: string;
   statusOnSubmit?: string;
   repair?: {
+    customer_repair_batch_no: string | null;
     factory: string | null;
     internal_code: string | null;
     internal_notes_zh: string | null;
@@ -217,6 +218,15 @@ export function RepairForm({
                 defaultValue={repair?.tracking_owner ?? ""}
                 id="tracking_owner"
                 name="tracking_owner"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="customer_repair_batch_no">维修批次号</Label>
+              <Input
+                defaultValue={repair?.customer_repair_batch_no ?? ""}
+                id="customer_repair_batch_no"
+                name="customer_repair_batch_no"
+                placeholder="客户送修时提供的批次号"
               />
             </div>
             <div className="grid gap-2">

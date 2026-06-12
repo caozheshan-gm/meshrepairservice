@@ -5,13 +5,6 @@ import Container from "@mui/material/Container";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import Timeline from "@mui/lab/Timeline";
-import TimelineConnector from "@mui/lab/TimelineConnector";
-import TimelineContent from "@mui/lab/TimelineContent";
-import TimelineDot from "@mui/lab/TimelineDot";
-import TimelineItem from "@mui/lab/TimelineItem";
-import TimelineSeparator from "@mui/lab/TimelineSeparator";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
@@ -21,6 +14,7 @@ import {
   PublicHeader,
   PublicMain,
 } from "@/components/public/hemlock-public";
+import { RepairTimeline } from "@/components/public/repair-timeline";
 import { getPublicProductBySerial } from "@/lib/public-data";
 import {
   publicMaterialLabel,
@@ -115,84 +109,34 @@ async function TraceContent({ params }: TracePageProps) {
               Repair Records
             </Typography>
 
-            {repairs.length > 0 ? (
-              <Timeline
-                position="right"
-                sx={{
-                  m: 0,
-                  mt: 2,
-                  p: 0,
-                  "& .MuiTimelineItem-root:before": { display: "none" },
-                }}
-              >
-                {repairs.map((repair, index) => (
-                  <TimelineItem key={repair.id}>
-                    <TimelineSeparator>
-                      <TimelineDot color="primary" variant="filled" />
-                      {index < repairs.length - 1 ? <TimelineConnector /> : null}
-                    </TimelineSeparator>
-                    <TimelineContent sx={{ pb: 3 }}>
-                      <Link
-                        href={`/t/${encodeURIComponent(product.serial_number)}/repairs/${repair.id}`}
-                        style={{ color: "inherit", textDecoration: "none" }}
-                      >
-                        <Paper
-                          square
-                          sx={{
-                            border: "1px solid",
-                            borderColor: "divider",
-                            color: "text.primary",
-                            display: "block",
-                            p: 3,
-                            transition: "border-color .15s ease, box-shadow .15s ease",
-                            "&:hover": {
-                              borderColor: "primary.main",
-                              boxShadow: "0 8px 28px rgba(0,0,0,0.08)",
-                            },
-                          }}
-                        >
-                          <Stack
-                            direction={{ xs: "column", md: "row" }}
-                            spacing={2}
-                            sx={{ justifyContent: "space-between" }}
-                          >
-                            <Box>
-                              <Typography sx={{ fontSize: 20, fontWeight: 800 }}>
-                                Repair #{repair.repair_number}
-                              </Typography>
-                              <Typography color="text.secondary" sx={{ mt: 1 }}>
-                                {repair.summary_en ||
-                                  repair.public_notes_en ||
-                                  "Repair details available."}
-                              </Typography>
-                            </Box>
-                            <Stack spacing={1} sx={{ alignItems: { xs: "flex-start", md: "flex-end" } }}>
-                              <Chip label="Completed" size="small" />
-                              <Typography color="text.secondary" sx={{ fontFamily: "monospace" }}>
-                                {repair.repair_date}
-                              </Typography>
-                            </Stack>
-                          </Stack>
-                        </Paper>
-                      </Link>
-                    </TimelineContent>
-                  </TimelineItem>
-                ))}
-              </Timeline>
-            ) : (
-              <Box
-                sx={{
-                  border: "1px dashed",
-                  borderColor: "divider",
-                  color: "text.secondary",
-                  mt: 3,
-                  p: 5,
-                  textAlign: "center",
-                }}
-              >
-                No public repair records are available for this product yet.
-              </Box>
-            )}
+            <Box sx={{ mt: 3 }}>
+              <RepairTimeline
+                emptyText="No public repair records are available for this product yet."
+                entries={repairs.map((repair) => ({
+                  badge: (
+                    <Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end" }}>
+                      {repair.customer_repair_batch_no ? (
+                        <Chip
+                          label={`Batch ${repair.customer_repair_batch_no}`}
+                          size="small"
+                          variant="outlined"
+                        />
+                      ) : null}
+                      <Chip label="Completed" size="small" />
+                    </Stack>
+                  ),
+                  date: repair.repair_date,
+                  description:
+                    repair.summary_en ||
+                    repair.public_notes_en ||
+                    "Repair details available.",
+                  href: `/t/${encodeURIComponent(product.serial_number)}/repairs/${repair.id}`,
+                  status: "completed",
+                  title: `Repair #${repair.repair_number}`,
+                }))}
+                interactive
+              />
+            </Box>
           </Paper>
 
           <Button href="/" sx={{ alignSelf: "flex-start" }} variant="outlined">

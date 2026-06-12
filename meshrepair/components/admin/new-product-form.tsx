@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import Link from "next/link";
 
 import { createProduct } from "@/app/admin/products/actions";
+import { CustomerCompanyCombobox } from "@/components/admin/customer-company-combobox";
 import { ProductTypeSelect } from "@/components/admin/product-type-select";
 import { BlockingOverlay } from "@/components/ui/blocking-overlay";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,11 @@ import { Label } from "@/components/ui/label";
 
 type ProductSource = "customer" | "own";
 
-export function NewProductForm() {
+export function NewProductForm({
+  customerCompanyOptions,
+}: {
+  customerCompanyOptions: string[];
+}) {
   const [productSource, setProductSource] = useState<ProductSource>("customer");
   const [, formAction, isPending] = useActionState(createProduct, null);
   const isOwnProduct = productSource === "own";
@@ -55,8 +60,8 @@ export function NewProductForm() {
           {!isOwnProduct ? (
             <div className="grid gap-4 md:grid-cols-2">
               <div className="grid gap-2">
-                <Label htmlFor="customer_company">客户公司</Label>
-                <Input id="customer_company" name="customer_company" />
+                <Label htmlFor="customer_company_picker">客户公司</Label>
+                <CustomerCompanyCombobox options={customerCompanyOptions} />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="product_type">产品类型</Label>

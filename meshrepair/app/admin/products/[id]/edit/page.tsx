@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { updateProduct } from "@/app/admin/products/actions";
 import { AdminPageShell } from "@/components/admin/admin-shell";
+import { CustomerCompanyCombobox } from "@/components/admin/customer-company-combobox";
 import { ProductTypeSelect } from "@/components/admin/product-type-select";
 import { PendingSubmitOverlay } from "@/components/pending-submit-overlay";
 import { Button } from "@/components/ui/button";
@@ -16,6 +18,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getCustomerCompanyOptions } from "@/lib/admin/customer-options";
 import { requireAdmin } from "@/lib/auth/admin";
 
 type EditProductPageProps = {
@@ -23,20 +26,34 @@ type EditProductPageProps = {
 };
 
 async function EditProductContent({ params }: EditProductPageProps) {
+  await connection();
   const { id } = await params;
   const { supabase } = await requireAdmin();
 
-  const { data: product, error } = await supabase
-    .from("products")
-    .select("*,customers(company_name,contact_name,contact_email,contact_phone)")
-    .eq("id", id)
-    .single();
+  const [productResult, customersResult] = await Promise.all([
+    supabase
+      .from("products")
+      .select("*,customers(company_name,contact_name,contact_email,contact_phone)")
+      .eq("id", id)
+      .single(),
+    getCustomerCompanyOptions(supabase),
+  ]);
+
+  const { data: product, error } = productResult;
 
   if (error || !product) {
     notFound();
   }
 
   const isOwnProduct = product.product_source === "own";
+  const customerCompanyOptions = Array.from(
+    new Set(
+      [
+        ...customersResult,
+        product.customers?.company_name?.trim() ?? "",
+      ].filter(Boolean),
+    ),
+  ).sort((a, b) => a.localeCompare(b, "zh-Hans-CN"));
 
   return (
     <AdminPageShell
@@ -82,11 +99,10 @@ async function EditProductContent({ params }: EditProductPageProps) {
             {!isOwnProduct ? (
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="grid gap-2">
-                  <Label htmlFor="customer_company">客户公司</Label>
-                  <Input
+                  <Label htmlFor="customer_company_picker">客户公司</Label>
+                  <CustomerCompanyCombobox
                     defaultValue={product.customers?.company_name ?? ""}
-                    id="customer_company"
-                    name="customer_company"
+                    options={customerCompanyOptions}
                   />
                 </div>
                 <div className="grid gap-2">
