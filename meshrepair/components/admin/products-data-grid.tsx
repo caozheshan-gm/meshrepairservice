@@ -53,6 +53,7 @@ export type ProductFilters = {
   productionModel?: string;
   productType?: string;
   q?: string;
+  repairBatch?: string;
   sort?: string;
   source?: string;
   size?: string;
@@ -113,12 +114,14 @@ export function ProductsDataGrid({
   const [deleteRows, setDeleteRows] = useState<ProductGridRow[]>([]);
   const [filterDraft, setFilterDraft] = useState<ProductFilters>(filters);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [repairBatchQuery, setRepairBatchQuery] = useState(filters.repairBatch ?? "");
   const [query, setQuery] = useState(filters.q ?? "");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [activeRow, setActiveRow] = useState<ProductGridRow | null>(null);
 
   useEffect(() => {
     setFilterDraft(filters);
+    setRepairBatchQuery(filters.repairBatch ?? "");
     setQuery(filters.q ?? "");
     setSelected(new Set());
   }, [filters]);
@@ -180,7 +183,7 @@ export function ProductsDataGrid({
   }
 
   function applyFilters() {
-    const nextFilters = { ...filterDraft, q: query };
+    const nextFilters = { ...filterDraft, q: query, repairBatch: repairBatchQuery };
     setFilterOpen(false);
     updateUrl(nextFilters, { resetPage: true });
   }
@@ -188,6 +191,7 @@ export function ProductsDataGrid({
   function clearFilters() {
     const nextFilters: ProductFilters = {};
     setFilterDraft(nextFilters);
+    setRepairBatchQuery("");
     setQuery("");
     setFilterOpen(false);
     updateUrl(nextFilters, { resetPage: true });
@@ -198,12 +202,26 @@ export function ProductsDataGrid({
     if (key === "q") {
       setQuery("");
     }
+    if (key === "repairBatch") {
+      setRepairBatchQuery("");
+    }
     setFilterDraft(nextFilters);
-    updateUrl({ ...nextFilters, q: key === "q" ? "" : query }, { resetPage: true });
+    updateUrl(
+      {
+        ...nextFilters,
+        q: key === "q" ? "" : query,
+        repairBatch: key === "repairBatch" ? "" : repairBatchQuery,
+      },
+      { resetPage: true },
+    );
   }
 
   const selectedRows = rows.filter((row) => selected.has(row.id));
-  const activeFilters = filterEntries({ ...filters, q: query });
+  const activeFilters = filterEntries({
+    ...filters,
+    q: query,
+    repairBatch: repairBatchQuery,
+  });
   const emptyRows = rows.length === 0;
 
   function changeSort(nextSort: string) {
@@ -216,6 +234,7 @@ export function ProductsDataGrid({
         page: "1",
         pageSize: String(pageSize),
         q: query,
+        repairBatch: repairBatchQuery,
         sort: nextSort,
       },
       { resetPage: true },
@@ -229,6 +248,7 @@ export function ProductsDataGrid({
       page: String(nextPage + 1),
       pageSize: String(pageSize),
       q: query,
+      repairBatch: repairBatchQuery,
       sort: sortField,
     });
   }
@@ -241,6 +261,7 @@ export function ProductsDataGrid({
         page: "1",
         pageSize: String(nextPageSize),
         q: query,
+        repairBatch: repairBatchQuery,
         sort: sortField,
       },
       { resetPage: true },
@@ -268,7 +289,11 @@ export function ProductsDataGrid({
             <Chip color="primary" label={`已选择 ${selected.size}`} size="small" />
           ) : null}
         </Stack>
-        <Stack direction="row" spacing={1.5}>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={1.5}
+          sx={{ width: { xs: "100%", md: "auto" } }}
+        >
           {selectedRows.length > 0 ? (
             <Button
               color="error"
@@ -283,6 +308,39 @@ export function ProductsDataGrid({
           <TextField
             onChange={(event) => {
               const nextQuery = event.target.value;
+              setRepairBatchQuery(nextQuery);
+              if (!nextQuery.trim() && filters.repairBatch) {
+                updateUrl(
+                  { ...filterDraft, q: query, repairBatch: "" },
+                  { resetPage: true },
+                );
+              }
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                updateUrl(
+                  { ...filterDraft, q: query, repairBatch: repairBatchQuery },
+                  { resetPage: true },
+                );
+              }
+            }}
+            placeholder="搜索维修批次号"
+            size="small"
+            sx={{ minWidth: { xs: "100%", sm: 240 } }}
+            value={repairBatchQuery}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+          <TextField
+            onChange={(event) => {
+              const nextQuery = event.target.value;
               setQuery(nextQuery);
               if (!nextQuery.trim() && filters.q) {
                 updateUrl({ ...filterDraft, q: "" }, { resetPage: true });
@@ -290,7 +348,10 @@ export function ProductsDataGrid({
             }}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
-                updateUrl({ ...filterDraft, q: query }, { resetPage: true });
+                updateUrl(
+                  { ...filterDraft, q: query, repairBatch: repairBatchQuery },
+                  { resetPage: true },
+                );
               }
             }}
             placeholder="搜索序列号"
@@ -774,6 +835,7 @@ function filterEntries(filters: ProductFilters) {
   const labels: Partial<Record<keyof ProductFilters, string>> = {
     customer: "客户公司",
     q: "搜索",
+    repairBatch: "维修批次号",
     material: "材质",
     productType: "产品类型",
     productionBatch: "生产批次",

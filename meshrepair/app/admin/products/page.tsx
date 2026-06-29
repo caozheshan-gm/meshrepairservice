@@ -24,6 +24,7 @@ type ProductsPageProps = {
     productionModel?: string;
     productType?: string;
     q?: string;
+    repairBatch?: string;
     sort?: string;
     source?: string;
     size?: string;
@@ -54,10 +55,16 @@ async function ProductsContent({ searchParams }: ProductsPageProps) {
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  let query = (supabase as never as AdminProductListClient)
-    .from("admin_product_list")
-    .select(
-      "id,serial_number,product_source,status,product_type,created_at,customer_id,customer_company,material,size,production_date,production_model,production_batch,repair_count,latest_repair_date",
+  const productListClient = supabase as never as AdminProductListClient;
+  const repairBatch = params.repairBatch?.trim();
+  let query = repairBatch
+    ? productListClient.rpc(
+        "search_admin_product_list_by_repair_batch",
+        { repair_batch_search: repairBatch },
+        { count: "exact" },
+      )
+    : productListClient.from("admin_product_list").select(
+      "id,serial_number,product_source,status,product_type,created_at,customer_id,customer_company,material,size,production_date,production_model,production_batch,repair_count,latest_repair_date,repair_batch_numbers",
       { count: "exact" },
     );
 
@@ -241,6 +248,7 @@ type AdminProductListRow = {
   production_date: string | null;
   production_model: string | null;
   repair_count: number;
+  repair_batch_numbers: string;
   serial_number: string;
   serial_number_normalized: string;
   size: string | null;
@@ -254,6 +262,11 @@ type AdminProductListClient = {
       options?: { count?: "exact" },
     ): AdminProductListQuery;
   };
+  rpc(
+    functionName: "search_admin_product_list_by_repair_batch",
+    args: { repair_batch_search: string },
+    options: { count: "exact" },
+  ): AdminProductListQuery;
 };
 
 type AdminProductListQuery = {
