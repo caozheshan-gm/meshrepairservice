@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { serialMatches } from "@/lib/serial-search";
+import { normalizeSerialSearch } from "@/lib/serial-search";
 
 export async function getPublicProductBySerial(serial: string) {
   const supabase = await createClient();
@@ -61,19 +61,30 @@ export async function getPublicRepairRecord(serial: string, repairId: string) {
 
 export async function findActiveSerialNumber(serial: string) {
   const supabase = await createClient();
+  const trimmedSerial = serial.trim();
+  const normalizedSerial = normalizeSerialSearch(trimmedSerial);
 
-  const { data: products, error } = await supabase
+  // QR URLs contain the canonical serial number, so query the database
+  // directly instead of loading an arbitrary first page of products. The
+  // canonical candidate also keeps the public search tolerant of omitted
+  // separators in generated OWN/REP serial numbers.
+  const candidates = new Set([trimmedSerial, trimmedSerial.toUpperCase()]);
+  const generatedSerial = normalizedSerial.match(
+    /^(OWN|REP)(\d{4})(\d{2})(\d{6})$/,
+  );
+
+  if (generatedSerial) {
+    candidates.add(
+      `${generatedSerial[1]}-${generatedSerial[2]}-${generatedSerial[3]}-${generatedSerial[4]}`,
+    );
+  }
+
+  const { data: product, error } = await supabase
     .from("products")
     .select("serial_number")
     .eq("status", "active")
-    .limit(2000);
+    .in("serial_number", Array.from(candidates))
+    .maybeSingle();
 
-  if (error) {
-    return null;
-  }
-
-  return (
-    products.find((product) => serialMatches(product.serial_number, serial))
-      ?.serial_number ?? null
-  );
+  return error ? null : product?.serial_number ?? null;
 }
